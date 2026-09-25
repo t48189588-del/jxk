@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global GitHub Chat Application</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="h-full bg-slate-900 text-slate-100 font-['Inter'] flex flex-col antialiased overflow-hidden">
+
+    <header class="bg-slate-800 border-b border-slate-700 px-4 py-3 flex items-center justify-between shadow-md z-10">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-500/30">
+                <i class="fa-solid fa-comments text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-tight text-white" data-i18n="appTitle">Global GitHub Chat</h1>
+                <p class="text-xs text-slate-400 flex items-center gap-1.5">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span data-i18n="connectedRepo">Synced to Repository (messages.json)</span>
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <!-- Language Selector -->
+            <div class="relative">
+                <select id="langSelect" class="bg-slate-700 text-xs text-slate-200 border border-slate-600 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition cursor-pointer">
+                    <option value="en">English (EN)</option>
+                    <option value="es">Español (ES)</option>
+                    <option value="fr">Français (FR)</option>
+                </select>
+            </div>
+
+            <!-- Settings / Config Button -->
+            <button id="configBtn" class="bg-slate-700 hover:bg-slate-600 text-slate-200 p-2 rounded-lg text-xs font-medium transition flex items-center gap-1.5 border border-slate-600 shadow-sm" title="Configure GitHub Token">
+                <i class="fa-solid fa-gear"></i>
+                <span class="hidden sm:inline" data-i18n="settings">Settings</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+        <!-- Chat Area -->
+        <div class="flex-1 flex flex-col bg-slate-900/50 h-full">
+            <!-- Messages Container -->
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                <!-- Messages will be dynamically rendered here -->
+            </div>
+
+            <!-- Typing Indicator & Quick Warning -->
+            <div id="statusBanner" class="px-4 py-1 text-xs text-amber-400 bg-amber-500/10 border-t border-amber-500/20 hidden flex items-center justify-between">
+                <span id="statusText">Connecting to GitHub repository...</span>
+                <button onclick="dismissBanner()" class="hover:text-white">&times;</button>
+            </div>
+
+            <!-- Chat Input Form -->
+            <div class="bg-slate-800 border-t border-slate-700 p-3 sm:p-4">
+                <form id="chatForm" class="flex flex-col sm:flex-row gap-2">
+                    <div class="flex gap-2">
+                        <input type="text" id="usernameInput" placeholder="Your Name" required maxlength="30"
+                            class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-28 sm:w-36">
+                    </div>
+                    <div class="flex-1 flex gap-2">
+                        <input type="text" id="messageInput" placeholder="Type your message here..." required maxlength="500"
+                            class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button type="submit" id="sendBtn"
+                            class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2 rounded-xl text-sm font-medium transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 cursor-pointer">
+                            <span data-i18n="send">Send</span>
+                            <i class="fa-solid fa-paper-plane text-xs"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sidebar instructions & stats -->
+        <aside class="w-full md:w-80 bg-slate-800/80 border-t md:border-t-0 md:border-l border-slate-700 p-4 flex flex-col justify-between overflow-y-auto text-xs">
+            <div class="space-y-4">
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700">
+                    <h3 class="font-semibold text-slate-200 mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-info text-indigo-400"></i>
+                        <span data-i18n="aboutTitle">GitHub Persistence</span>
+                    </h3>
+                    <p class="text-slate-400 leading-relaxed" data-i18n="aboutDesc">
+                        Messages are securely committed straight to <code class="text-indigo-300 bg-slate-800 px-1 py-0.5 rounded">messages.json</code> via the GitHub API. Supports up to 100 simultaneous users on GitHub Pages.
+                    </p>
+                </div>
+
+                <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700 space-y-2">
+                    <h3 class="font-semibold text-slate-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-code text-indigo-400"></i>
+                        <span data-i18n="filesTitle">Project Files Included</span>
+                    </h3>
+                    <ul class="space-y-1.5 text-slate-400 font-mono">
+                        <li class="flex items-center justify-between hover:text-slate-200 cursor-pointer" onclick="switchFileTab('index.html')">
+                            <span>index.html</span> <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </li>
+                        <li class="flex items-center justify-between hover:text-slate-200 cursor-pointer" onclick="switchFileTab('style.css')">
+                            <span>style.css</span> <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </li>
+                        <li class="flex items-center justify-between hover:text-slate-200 cursor-pointer" onclick="switchFileTab('app.js')">
+                            <span>app.js</span> <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </li>
+                        <li class="flex items-center justify-between hover:text-slate-200 cursor-pointer" onclick="switchFileTab('messages.json')">
+                            <span>messages.json</span> <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </li>
+                        <li class="flex items-center justify-between hover:text-slate-200 cursor-pointer" onclick="switchFileTab('README.md')">
+                            <span>README.md</span> <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-700 text-center text-slate-500">
+                <p>GitHub Pages Production Ready</p>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="configModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-lock text-indigo-400"></i>
+                    <span data-i18n="modalTitle">Repository Configuration</span>
+                </h3>
+                <button onclick="toggleConfigModal(false)" class="text-slate-400 hover:text-white text-lg">&times;</button>
+            </div>
+            <p class="text-xs text-slate-400" data-i18n="modalDesc">
+                To commit messages back to GitHub from a static site, enter your GitHub Repository details and a Personal Access Token with <code class="text-indigo-300">repo</code> permissions.
+            </p>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">GitHub Owner / Organization</label>
+                    <input type="text" id="repoOwner" placeholder="e.g. octocat" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Repository Name</label>
+                    <input type="text" id="repoName" placeholder="e.g. global-chat" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-300 mb-1">Personal Access Token (PAT)</label>
+                    <input type="password" id="repoToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <span class="text-[10px] text-slate-500 mt-1 block">Token is stored securely in your browser's LocalStorage only.</span>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="toggleConfigModal(false)" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded-xl text-xs font-medium transition">Cancel</button>
+                <button onclick="saveConfig()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-xl text-xs font-medium transition shadow-lg shadow-indigo-600/30">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Code Inspector Modal -->
+    <div id="codeModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-3xl h-[80vh] flex flex-col shadow-2xl">
+            <div class="p-4 border-b border-slate-700 flex items-center justify-between">
+                <h3 id="codeModalTitle" class="font-bold text-white text-sm font-mono">filename</h3>
+                <div class="flex items-center gap-2">
+                    <button onclick="copyCodeContent()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-copy"></i> Copy
+                    </button>
+                    <button onclick="closeCodeModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+                </div>
+            </div>
+            <div class="flex-1 p-4 overflow-auto bg-slate-950 font-mono text-xs text-slate-300">
+                <pre id="codeModalContent" class="whitespace-pre-wrap"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
