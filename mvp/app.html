@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CulturaLink - Mobile Cultural Learning PWA & Desktop Companion</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Alpine.js CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        /* Custom scrollbar for mobile frame */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 h-full flex flex-col items-center justify-center overflow-x-hidden m-0 p-0" x-data="appState()" x-init="init()">
+
+    <!-- Desktop Header Banner & Presentation Mode Launcher -->
+    <header class="w-full bg-slate-800/80 backdrop-blur border-b border-slate-700 px-6 py-3 flex items-center justify-between z-50 fixed top-0 left-0 right-0">
+        <div class="flex items-center space-x-3">
+            <div class="bg-brand-500 p-2 rounded-xl text-slate-950 font-bold shadow-lg shadow-brand-500/20">
+                <i data-lucide="globe" class="w-6 h-6 stroke-[2.5]"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-tight text-white flex items-center gap-2">
+                    CulturaLink <span class="text-xs bg-brand-500/20 text-brand-400 px-2 py-0.5 rounded-full border border-brand-500/30">PWA MVP</span>
+                </h1>
+                <p class="text-xs text-slate-400">Cross-cultural immersive learning & live presentation sync</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <button @click="togglePresentationMode()" class="flex items-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-4 py-2 rounded-xl font-medium text-sm shadow-md transition transform active:scale-95">
+                <i data-lucide="monitor" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Launch Desktop Presentation View</span>
+                <span class="sm:hidden">Presentation</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container: Mobile Frame on Desktop / Full on Mobile -->
+    <main class="w-full flex-1 flex items-center justify-center pt-16 pb-4 px-2 sm:px-4">
+        
+        <!-- Mobile Device Wrapper -->
+        <div class="w-full max-w-[430px] h-[calc(100vh-5rem)] max-h-[880px] bg-slate-950 rounded-[40px] border-[8px] border-slate-700 shadow-2xl flex flex-col relative overflow-hidden">
+            
+            <!-- Phone Notch & Status Bar -->
+            <div class="bg-slate-950 text-slate-400 px-6 py-2 flex justify-between items-center text-xs font-semibold z-40 select-none">
+                <span x-text="currentTime">9:41</span>
+                <div class="w-24 h-4 bg-slate-900 rounded-full absolute left-1/2 -translate-x-1/2 top-2"></div>
+                <div class="flex items-center space-x-1.5">
+                    <i data-lucide="signal" class="w-3.5 h-3.5"></i>
+                    <i data-lucide="wifi" class="w-3.5 h-3.5"></i>
+                    <i data-lucide="battery" class="w-3.5 h-3.5"></i>
+                </div>
+            </div>
+
+            <!-- App Viewport Body -->
+            <div class="flex-1 overflow-y-auto relative flex flex-col bg-slate-900 pb-20">
+                
+                <!-- SCREEN 0: HOME / FLASHCARDS -->
+                <div x-show="currentScreen === 'home'" class="flex-1 flex flex-col p-4 space-y-4" x-transition.opacity>
+                    <!-- Country Selector Pill Bar -->
+                    <div class="flex space-x-2 overflow-x-auto pb-2 scrollbar-none">
+                        <template x-for="country in countries" :key="country.id">
+                            <button @click="selectCountry(country.id)" 
+                                    :class="selectedCountryId === country.id ? 'bg-brand-500 text-slate-950 font-bold shadow-md shadow-brand-500/20' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'"
+                                    class="px-4 py-2 rounded-full text-sm whitespace-nowrap transition flex items-center space-x-2">
+                                <span x-text="country.flag"></span>
+                                <span x-text="country.name"></span>
+                            </button>
+                        </template>
+                    </div>
+
+                    <!-- Active Country Banner -->
+                    <div class="relative rounded-2xl overflow-hidden shadow-lg border border-slate-700 h-36 bg-slate-800 flex items-end p-4">
+                        <img :src="activeCountry.banner" class="absolute inset-0 w-full h-full object-cover opacity-40" alt="Country Banner">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
+                        <div class="relative z-10">
+                            <span class="text-xs uppercase tracking-wider font-semibold text-brand-400 bg-brand-500/10 px-2 py-0.5 rounded border border-brand-500/20" x-text="activeCountry.region"></span>
+                            <h2 class="text-2xl font-bold text-white mt-1" x-text="activeCountry.name"></h2>
+                            <p class="text-xs text-slate-300 line-clamp-1" x-text="activeCountry.greetingDescription"></p>
+                        </div>
+                    </div>
+
+                    <!-- Scenario filter notice if active -->
+                    <template x-if="activeScenario">
+                        <div class="bg-brand-500/10 border border-brand-500/30 rounded-xl p-3 flex items-center justify-between text-xs text-brand-300">
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="filter" class="w-4 h-4 text-brand-400"></i>
+                                <span>Filtered by: <strong x-text="activeScenario.title"></strong></span>
+                            </div>
+                            <button @click="clearScenarioFilter()" class="text-slate-400 hover:text-white font-medium underline">Clear</button>
+                        </div>
+                    </template>
+
+                    <!-- Flashcard Stack Section -->
+                    <div class="flex-1 flex flex-col justify-center items-center my-auto">
+                        <template x-if="filteredFlashcards.length > 0">
+                            <div class="w-full max-w-sm perspective-1000 h-72 cursor-pointer" @click="isFlipped = !isFlipped">
+                                <div class="relative w-full h-full duration-500 transform-style-3d shadow-xl rounded-2xl" :class="isFlipped ? 'rotate-y-180' : ''">
+                                    
+                                    <!-- Card Front -->
+                                    <div class="absolute inset-0 w-full h-full bg-slate-800 border border-slate-700 rounded-2xl p-5 flex flex-col justify-between backface-hidden overflow-hidden">
+                                        <div class="absolute inset-0 -z-10 opacity-25">
+                                            <img :src="currentCard.image" class="w-full h-full object-cover" alt="Card Image">
+                                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900"></div>
+                                        </div>
+                                        <div class="flex justify-between items-center z-10">
+                                            <span class="text-xs bg-slate-900/80 backdrop-blur text-slate-300 px-2.5 py-1 rounded-full border border-slate-700" x-text="currentCard.category"></span>
+                                            <span class="text-xs text-slate-400 font-medium" x-text="(currentCardIndex + 1) + ' / ' + filteredFlashcards.length"></span>
+                                        </div>
+                                        <div class="text-center z-10 my-auto">
+                                            <p class="text-xs text-brand-400 uppercase tracking-widest font-semibold mb-1">Foreign Phrase</p>
+                                            <h3 class="text-3xl font-extrabold text-white mb-2" x-text="currentCard.phrase"></h3>
+                                            <p class="text-sm text-slate-300 italic" x-text="currentCard.pronunciation"></p>
+                                        </div>
+                                        <div class="text-center z-10">
+                                            <span class="text-xs text-slate-400 flex items-center justify-center gap-1 bg-slate-900/60 py-1.5 rounded-lg border border-slate-700/50">
+                                                <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Tap card to flip & view meaning
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Card Back -->
+                                    <div class="absolute inset-0 w-full h-full bg-slate-800 border border-slate-700 rounded-2xl p-5 flex flex-col justify-between backface-hidden rotate-y-180">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-xs bg-brand-500/20 text-brand-400 px-2.5 py-1 rounded-full border border-brand-500/30">Translation & Context</span>
+                                            <span class="text-xs text-slate-400 font-medium" x-text="(currentCardIndex + 1) + ' / ' + filteredFlashcards.length"></span>
+                                        </div>
+                                        <div class="text-center my-auto">
+                                            <p class="text-xs text-slate-400 uppercase tracking-widest font-semibold mb-1">English Meaning</p>
+                                            <h3 class="text-2xl font-bold text-white mb-3" x-text="currentCard.translation"></h3>
+                                            <p class="text-xs text-slate-300 bg-slate-900/80 p-3 rounded-xl border border-slate-700/60" x-text="currentCard.culturalNote"></p>
+                                        </div>
+                                        <div class="text-center">
+                                            <span class="text-xs text-slate-400">Tap to flip back</span>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </template>
+
+                        <template x-if="filteredFlashcards.length === 0">
+                            <div class="text-center p-8 bg-slate-800/50 rounded-2xl border border-slate-700">
+                                <i data-lucide="alert-circle" class="w-10 h-10 text-slate-500 mx-auto mb-2"></i>
+                                <p class="text-sm text-slate-300 font-medium">No flashcards found for this scenario filter.</p>
+                                <button @click="clearScenarioFilter()" class="mt-3 text-xs bg-brand-500 text-slate-950 font-bold px-3 py-1.5 rounded-lg">Reset Filter</button>
+                            </div>
+                        </template>
+
+                        <!-- Card Navigation Controls -->
+                        <div class="flex items-center justify-between w-full max-w-sm mt-4">
+                            <button @click="prevCard()" class="flex items-center space-x-1 bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl text-sm font-medium border border-slate-700 transition">
+                                <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                                <span>Previous</span>
+                            </button>
+                            <button @click="nextCard()" class="flex items-center space-x-1 bg-brand-500 hover:bg-brand-600 text-slate-950 px-4 py-2 rounded-xl text-sm font-bold shadow-md transition">
+                                <span>Next Card</span>
+                                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SCREEN 1: SCENARIOS GRID -->
+                <div x-show="currentScreen === 'scenarios'" class="flex-1 flex flex-col p-4 space-y-4" x-transition.opacity>
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i data-lucide="compass" class="w-5 h-5 text-brand-400"></i> Cultural Scenarios
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Select a real-world situation to filter flashcards and focus your learning for <span class="text-brand-400 font-semibold" x-text="activeCountry.name"></span>.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-3">
+                        <template x-for="scenario in activeCountry.scenarios" :key="scenario.id">
+                            <div @click="applyScenarioFilter(scenario)" 
+                                 :class="activeScenario && activeScenario.id === scenario.id ? 'border-brand-500 bg-brand-500/10' : 'border-slate-700 bg-slate-800 hover:border-slate-600'"
+                                 class="border rounded-2xl p-4 cursor-pointer transition flex items-center space-x-4 shadow-md group">
+                                <div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-xl shrink-0 group-hover:scale-105 transition">
+                                    <span x-text="scenario.icon"></span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="font-bold text-white text-sm truncate" x-text="scenario.title"></h3>
+                                    <p class="text-xs text-slate-400 mt-0.5 line-clamp-1" x-text="scenario.description"></p>
+                                </div>
+                                <div class="shrink-0 text-slate-400 group-hover:text-white">
+                                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- SCREEN 2: COMMUNITY Q&A FORUM -->
+                <div x-show="currentScreen === 'qa'" class="flex-1 flex flex-col p-4 space-y-4" x-transition.opacity>
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i data-lucide="message-square" class="w-5 h-5 text-brand-400"></i> Community Q&A
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Ask cultural etiquette questions and get instant AI-augmented community answers.</p>
+                    </div>
+
+                    <!-- Post Question Box -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-md">
+                        <h3 class="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Ask a Question</h3>
+                        <textarea x-model="newQuestionText" rows="2" placeholder="e.g., Is it polite to tip taxi drivers in Seoul?" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-500 resize-none"></textarea>
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="text-[10px] text-slate-400">Auto-AI Fallback enabled</span>
+                            <button @click="submitQuestion()" class="bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs shadow transition">Post Question</button>
+                        </div>
+                    </div>
+
+                    <!-- Q&A Feed -->
+                    <div class="space-y-3">
+                        <template x-for="post in qaPosts" :key="post.id">
+                            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-md space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs bg-slate-900 text-slate-300 px-2 py-0.5 rounded-md border border-slate-700" x-text="post.countryName"></span>
+                                    <span class="text-[10px] text-slate-400" x-text="post.timestamp"></span>
+                                </div>
+                                <p class="text-sm font-semibold text-white" x-text="post.question"></p>
+                                <div class="bg-slate-900/80 border border-slate-700/60 rounded-xl p-3 space-y-1">
+                                    <div class="flex items-center space-x-1.5 text-brand-400 text-xs font-bold">
+                                        <i data-lucide="bot" class="w-3.5 h-3.5"></i>
+                                        <span x-text="post.author"></span>
+                                    </div>
+                                    <p class="text-xs text-slate-300 leading-relaxed" x-text="post.answer"></p>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- SCREEN 3: PERSONALIZATION & PROFILE BUILDER -->
+                <div x-show="currentScreen === 'profile'" class="flex-1 flex flex-col p-4 space-y-4" x-transition.opacity>
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i data-lucide="user-check" class="w-5 h-5 text-brand-400"></i> Personalization & Persona
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Tailor your learning profile and customize content ranking based on your travel goals.</p>
+                    </div>
+
+                    <!-- Profile Form Card -->
+                    <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-md space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Your Name / Alias</label>
+                            <input type="text" x-model="userProfile.name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Proficiency Level</label>
+                            <select x-model="userProfile.proficiency" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+                                <option value="Beginner">Beginner (Novice Explorer)</option>
+                                <option value="Intermediate">Intermediate (Conversational)</option>
+                                <option value="Advanced">Advanced (Cultural Enthusiast)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Primary Travel Intent</label>
+                            <select x-model="userProfile.intent" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+                                <option value="Tourism & Leisure">Tourism & Leisure</option>
+                                <option value="Business & Relocation">Business & Relocation</option>
+                                <option value="Academic Exchange">Academic Exchange</option>
+                                <option value="Food & Culinary Explore">Food & Culinary Explore</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Cultural Interest Tags</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <template x-for="tag in availableTags" :key="tag">
+                                    <button @click="toggleInterestTag(tag)" 
+                                            :class="userProfile.interests.includes(tag) ? 'bg-brand-500 text-slate-950 font-bold border-brand-500' : 'bg-slate-900 text-slate-300 border-slate-700'"
+                                            class="text-xs px-3 py-2 rounded-xl border text-left transition truncate" x-text="tag">
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <button @click="saveProfile()" class="w-full bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold py-2.5 rounded-xl text-xs shadow transition">Save Persona to LocalStorage</button>
+                    </div>
+
+                    <!-- Persona Status Badge -->
+                    <div class="bg-gradient-to-r from-slate-800 to-slate-800/60 border border-slate-700 rounded-2xl p-4 shadow-md space-y-2">
+                        <div class="flex items-center space-x-2 text-brand-400">
+                            <i data-lucide="award" class="w-4 h-4"></i>
+                            <span class="text-xs font-bold uppercase tracking-wider">Active Local Persona</span>
+                        </div>
+                        <p class="text-xs text-slate-300">Persona status: <strong class="text-white" x-text="userProfile.proficiency + ' (' + userProfile.intent + ') '"></strong></p>
+                        <p class="text-[11px] text-slate-400">Tags active: <span class="text-brand-300" x-text="userProfile.interests.join(', ') || 'None selected'"></span></p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Mobile Bottom Navigation Bar -->
+            <nav class="absolute bottom-0 left-0 right-0 bg-slate-950/90 backdrop-blur border-t border-slate-800 px-4 py-2.5 flex justify-around items-center z-40">
+                <button @click="currentScreen = 'home'" :class="currentScreen === 'home' ? 'text-brand-400' : 'text-slate-400 hover:text-slate-200'" class="flex flex-col items-center space-y-1 transition">
+                    <i data-lucide="book-open" class="w-5 h-5"></i>
+                    <span class="text-[10px] font-medium">Flashcards</span>
+                </button>
+                <button @click="currentScreen = 'scenarios'" :class="currentScreen === 'scenarios' ? 'text-brand-400' : 'text-slate-400 hover:text-slate-200'" class="flex flex-col items-center space-y-1 transition">
+                    <i data-lucide="compass" class="w-5 h-5"></i>
+                    <span class="text-[10px] font-medium">Scenarios</span>
+                </button>
+                <button @click="currentScreen = 'qa'" :class="currentScreen === 'qa' ? 'text-brand-400' : 'text-slate-400 hover:text-slate-200'" class="flex flex-col items-center space-y-1 transition">
+                    <i data-lucide="message-square" class="w-5 h-5"></i>
+                    <span class="text-[10px] font-medium">Q&A Feed</span>
+                </button>
+                <button @click="currentScreen = 'profile'" :class="currentScreen === 'profile' ? 'text-brand-400' : 'text-slate-400 hover:text-slate-200'" class="flex flex-col items-center space-y-1 transition">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                    <span class="text-[10px] font-medium">Profile</span>
+                </button>
+            </nav>
+
+        </div>
+    </main>
+
+    <!-- DESKTOP PRESENTATION MODE OVERLAY MODAL -->
+    <template x-if="presentationMode">
+        <div class="fixed inset-0 bg-slate-950/95 backdrop-blur-xl z-50 flex flex-col p-6 overflow-y-auto">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-800 mb-6">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-brand-500 p-2.5 rounded-2xl text-slate-950 font-bold shadow-lg">
+                        <i data-lucide="monitor" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-white">Desktop Presentation Mode</h2>
+                        <p class="text-xs text-slate-400">Live synchronized session via BroadcastChannel & LocalStorage</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button @click="destroySession()" class="flex items-center space-x-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 px-4 py-2 rounded-xl text-xs font-bold transition">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        <span>Destroy Session & Wipe Data</span>
+                    </button>
+                    <button @click="togglePresentationMode()" class="flex items-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-4 py-2 rounded-xl text-xs font-medium transition">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                        <span>Close Presentation</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Presentation Grid Dashboard -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl mx-auto w-full flex-1">
+                <!-- Column 1: Active Country & Flashcard Stats -->
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+                    <div>
+                        <span class="text-xs uppercase tracking-wider text-brand-400 font-semibold bg-brand-500/10 px-2.5 py-1 rounded-full border border-brand-500/20">Active Session State</span>
+                        <h3 class="text-2xl font-bold text-white mt-4" x-text="activeCountry.name"></h3>
+                        <p class="text-xs text-slate-400 mt-1" x-text="activeCountry.region"></p>
+                        
+                        <div class="mt-6 space-y-4">
+                            <div class="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/50">
+                                <p class="text-xs text-slate-400">Current Scenario Filter</p>
+                                <p class="text-sm font-bold text-white mt-1" x-text="activeScenario ? activeScenario.title : 'None (All Flashcards)'"></p>
+                            </div>
+                            <div class="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/50">
+                                <p class="text-xs text-slate-400">Flashcard Progress</p>
+                                <p class="text-sm font-bold text-white mt-1" x-text="(currentCardIndex + 1) + ' of ' + filteredFlashcards.length + ' cards viewed'"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-800 text-xs text-slate-500">
+                        Connected mobile client active & transmitting state.
+                    </div>
+                </div>
+
+                <!-- Column 2: User Persona & Profile -->
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+                    <div>
+                        <span class="text-xs uppercase tracking-wider text-teal-400 font-semibold bg-teal-500/10 px-2.5 py-1 rounded-full border border-teal-500/20">Learner Persona</span>
+                        <h3 class="text-xl font-bold text-white mt-4" x-text="userProfile.name"></h3>
+                        <div class="mt-6 space-y-3">
+                            <div class="flex justify-between text-xs py-2 border-b border-slate-800">
+                                <span class="text-slate-400">Proficiency Level</span>
+                                <span class="font-semibold text-white" x-text="userProfile.proficiency"></span>
+                            </div>
+                            <div class="flex justify-between text-xs py-2 border-b border-slate-800">
+                                <span class="text-slate-400">Travel Intent</span>
+                                <span class="font-semibold text-white" x-text="userProfile.intent"></span>
+                            </div>
+                            <div>
+                                <span class="text-xs text-slate-400 block mb-2">Selected Interests</span>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <template x-for="tag in userProfile.interests" :key="tag">
+                                        <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-1 rounded-lg border border-slate-700" x-text="tag"></span>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-800 text-xs text-slate-500">
+                        Synchronized locally via LocalStorage & BroadcastChannel.
+                    </div>
+                </div>
+
+                <!-- Column 3: Live Q&A Stream & AI Fallback Log -->
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+                    <div>
+                        <span class="text-xs uppercase tracking-wider text-amber-400 font-semibold bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20">Live Q&A Log</span>
+                        <h3 class="text-xl font-bold text-white mt-4">Community Activity</h3>
+                        <div class="mt-4 space-y-3 max-h-60 overflow-y-auto pr-1">
+                            <template x-for="post in qaPosts" :key="post.id">
+                                <div class="bg-slate-800/80 p-3 rounded-2xl border border-slate-700/50 space-y-1">
+                                    <div class="flex justify-between text-[10px] text-slate-400">
+                                        <span x-text="post.countryName"></span>
+                                        <span x-text="post.timestamp"></span>
+                                    </div>
+                                    <p class="text-xs font-semibold text-white" x-text="post.question"></p>
+                                    <p class="text-[11px] text-slate-300 italic" x-text="post.answer"></p>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-slate-800 text-xs text-slate-500">
+                        Auto-AI Fallback engine active.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        // BroadcastChannel for cross-view real-time sync
+        const culturalChannel = new BroadcastChannel('cultural_link_sync_channel');
+
+        function appState() {
+            return {
+                currentScreen: 'home',
+                presentationMode: false,
+                currentTime: '9:41',
+                selectedCountryId: 'japan',
+                activeScenario: null,
+                currentCardIndex: 0,
+                isFlipped: false,
+                newQuestionText: '',
+
+                // User Profile & Preferences
+                userProfile: {
+                    name: 'Alex Traveler',
+                    proficiency: 'Beginner',
+                    intent: 'Tourism & Leisure',
+                    interests: ['Food & Dining', 'Greetings & Politeness']
+                },
+
+                availableTags: [
+                    'Food & Dining', 'Greetings & Politeness', 'Public Transit', 
+                    'Shopping & Convenience', 'Festivals & Temples', 'Emergency & Help'
+                ],
+
+                // Robust Datasets for 4 Countries
+                countries: [
+                    {
+                        id: 'japan',
+                        name: 'Japan',
+                        region: 'East Asia',
+                        flag: '🇯🇵',
+                        banner: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80',
+                        greetingDescription: 'Master polite bows, bowing etiquette, and essential phrases for Tokyo & Kyoto.',
+                        scenarios: [
+                            { id: 's1', title: 'At Convenience Store (Konbini)', icon: '🏪', description: 'Buying bento boxes and paying at register.' },
+                            { id: 's2', title: 'Train Commuting & Subways', icon: '🚆', description: 'Navigating Yamanote line and station passes.' },
+                            { id: 's3', title: 'Dining & Izakayas', icon: '🍜', description: 'Ordering food, saying thanks before and after meals.' },
+                            { id: 's4', title: 'Shrine & Temple Visits', icon: '⛩️', description: 'Purification rituals and bowing etiquette.' }
+                        ],
+                        flashcards: [
+                            { id: 'j1', category: 'Convenience Store', phrase: 'Arigatou gozaimasu', pronunciation: 'Ah-ree-gah-toh goh-zah-ee-mah-soo', translation: 'Thank you very much', culturalNote: 'Used frequently in konbinis and restaurants to show gratitude to staff.', image: 'https://images.unsplash.com/photo-1528164344705-475426879c0d?auto=format&fit=crop&w=600&q=80', tags: ['Shopping & Convenience', 'Greetings & Politeness'] },
+                            { id: 'j2', category: 'Train Commuting', phrase: 'Sumimasen', pronunciation: 'Sue-mee-mah-sen', translation: 'Excuse me / Sorry', culturalNote: 'Indispensable when squeezing past passengers on crowded Tokyo trains.', image: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=600&q=80', tags: ['Public Transit', 'Greetings & Politeness'] },
+                            { id: 'j3', category: 'Dining & Izakayas', phrase: 'Itadakimasu', pronunciation: 'Ee-tah-dah-kee-mah-soo', translation: 'I humbly receive (Before eating)', culturalNote: 'Said before every meal to thank farmers, cooks, and the ingredients.', image: 'https://images.unsplash.com/photo-1553163147-622ab57be1c2?auto=format&fit=crop&w=600&q=80', tags: ['Food & Dining'] },
+                            { id: 'j4', category: 'Shrine & Temple', phrase: 'O-negai shimasu', pronunciation: 'Oh-neh-gah-ee shee-mah-soo', translation: 'Please do this for me', culturalNote: 'Used when requesting assistance or making a wish at a Shinto shrine.', image: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=600&q=80', tags: ['Festivals & Temples'] }
+                        ]
+                    },
+                    {
+                        id: 'malaysia',
+                        name: 'Malaysia',
+                        region: 'Southeast Asia',
+                        flag: '🇲🇾',
+                        banner: 'https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=800&q=80',
+                        greetingDescription: 'Explore multicultural harmony in Kuala Lumpur, Penang street food, and heritage.',
+                        scenarios: [
+                            { id: 'm1', title: 'Street Food & Mamak Stalls', icon: '🍛', description: 'Ordering Teh Tarik and Roti Canai.' },
+                            { id: 'm2', title: 'Grab Ride & Commuting', icon: '🚗', description: 'Greeting drivers and navigating KL traffic.' },
+                            { id: 'm3', title: 'Market Bargaining', icon: '🛍️', description: 'Polite bargaining at Petaling Street.' }
+                        ],
+                        flashcards: [
+                            { id: 'm1', category: 'Street Food', phrase: 'Terima kasih', pronunciation: 'Teh-ree-mah kah-seh', translation: 'Thank you', culturalNote: 'Standard Malay expression of thanks used across all cultural groups.', image: 'https://images.unsplash.com/photo-1596422846543-75c6fc197f07?auto=format&fit=crop&w=600&q=80', tags: ['Food & Dining', 'Greetings & Politeness'] },
+                            { id: 'm2', category: 'Street Food', phrase: 'Boss, satu Teh Tarik!', pronunciation: 'Boss, sah-too teh tah-rik', translation: 'Boss, one pulled milk tea!', culturalNote: 'Friendly local phrasing used at Mamak stalls across Malaysia.', image: 'https://images.unsplash.com/photo-1541544741938-0af808871cc0?auto=format&fit=crop&w=600&q=80', tags: ['Food & Dining'] },
+                            { id: 'm3', category: 'Greetings', phrase: 'Selamat pagi', pronunciation: 'Seh-lah-mat pah-gee', translation: 'Good morning', culturalNote: 'Warm greeting used before noon.', image: 'https://images.unsplash.com/photo-1583499871897-4752690d4f3b?auto=format&fit=crop&w=600&q=80', tags: ['Greetings & Politeness'] }
+                        ]
+                    },
+                    {
+                        id: 'panama',
+                        name: 'Panama',
+                        region: 'Central America',
+                        flag: '🇵🇦',
+                        banner: 'https://images.unsplash.com/photo-1512813266854-5d5e13d6e43d?auto=format&fit=crop&w=800&q=80',
+                        greetingDescription: 'Experience vibrant Latin culture, Casco Viejo history, and the Panama Canal.',
+                        scenarios: [
+                            { id: 'p1', title: 'At the Cafe & Bakery', icon: '☕', description: 'Ordering Geisha coffee and local pastries.' },
+                            { id: 'p2', title: 'Asking Directions', icon: '🗺️', description: 'Navigating Panama City streets and metro.' }
+                        ],
+                        flashcards: [
+                            { id: 'p1', category: 'Greetings', phrase: 'Buenos días / Qué xopa', pronunciation: 'Bweh-nos dee-as / Keh soh-pah', translation: 'Good morning / What is up? (Local slang)', culturalNote: '"Qué xopa" is a famous Panamanian slang greeting among friends.', image: 'https://images.unsplash.com/photo-1512813266854-5d5e13d6e43d?auto=format&fit=crop&w=600&q=80', tags: ['Greetings & Politeness'] },
+                            { id: 'p2', category: 'Cafe & Bakery', phrase: 'Muchas gracias', pronunciation: 'Moo-chas gra-see-as', translation: 'Many thanks', culturalNote: 'Always accompanied by a warm smile in Panamanian hospitality.', image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=600&q=80', tags: ['Food & Dining'] }
+                        ]
+                    },
+                    {
+                        id: 'korea',
+                        name: 'South Korea',
+                        region: 'East Asia',
+                        flag: '🇰🇷',
+                        banner: 'https://images.unsplash.com/photo-1538485399060-58913318f2d4?auto=format&fit=crop&w=800&q=80',
+                        greetingDescription: 'Discover Seoul dynamism, K-culture, royal palaces, and BBQ etiquette.',
+                        scenarios: [
+                            { id: 'k1', title: 'BBQ Dining & Restaurants', icon: '🥩', description: 'Respecting elders and pouring drinks.' },
+                            { id: 'k2', title: 'Subway & Navigation', icon: '🚇', description: 'Using T-money cards and transfer stations.' }
+                        ],
+                        flashcards: [
+                            { id: 'k1', category: 'Greetings', phrase: 'Annyeonghaseyo', pronunciation: 'Ahn-nyoung-ha-se-yo', translation: 'Hello (Polite)', culturalNote: 'Standard polite greeting accompanied by a slight nod or bow.', image: 'https://images.unsplash.com/photo-1538485399060-58913318f2d4?auto=format&fit=crop&w=600&q=80', tags: ['Greetings & Politeness'] },
+                            { id: 'k2', category: 'Dining', phrase: 'Jal-meok-gess-seumnida', pronunciation: 'Jal-meok-gess-seum-ni-da', translation: 'I will eat well (Before meal)', culturalNote: 'Said to host or companions before starting a meal.', image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80', tags: ['Food & Dining'] }
+                        ]
+                    }
+                ],
+
+                // Community Q&A Mock Feed
+                qaPosts: [
+                    { id: 'q1', countryName: 'Japan', question: 'Should I leave tips at restaurants in Tokyo?', author: 'Auto-AI Assistant', answer: 'No, tipping is not practiced in Japan and can sometimes cause confusion or be considered impolite as service charge is included.', timestamp: '10m ago' },
+                    { id: 'q2', countryName: 'Malaysia', question: 'What is the dress code when visiting mosques in Kuala Lumpur?', author: 'Auto-AI Assistant', answer: 'Visitors should dress modestly, covering shoulders and knees. Robes and scarves are typically provided at the entrance for tourists.', timestamp: '1h ago' }
+                ],
+
+                init() {
+                    // Load saved state from LocalStorage if available
+                    const savedProfile = localStorage.getItem('cultura_user_profile');
+                    if (savedProfile) {
+                        try { this.userProfile = JSON.parse(savedProfile); } catch(e){}
+                    }
+
+                    const savedPosts = localStorage.getItem('cultura_qa_posts');
+                    if (savedPosts) {
+                        try { this.qaPosts = JSON.parse(savedPosts); } catch(e){}
+                    }
+
+                    // Clock updater
+                    setInterval(() => {
+                        const now = new Date();
+                        this.currentTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    }, 1000);
+
+                    // Listen to BroadcastChannel for sync events
+                    culturalChannel.onmessage = (event) => {
+                        if (event.data && event.data.type === 'SYNC_STATE') {
+                            // Sync state received
+                        }
+                    };
+
+                    // Initial Lucide icon render
+                    setTimeout(() => lucide.createIcons(), 100);
+                },
+
+                get activeCountry() {
+                    return this.countries.find(c => c.id === this.selectedCountryId) || this.countries[0];
+                },
+
+                get filteredFlashcards() {
+                    let cards = this.activeCountry.flashcards;
+                    if (this.activeScenario) {
+                        // Filter flashcards matching scenario tags or category
+                        cards = cards.filter(c => c.category === this.activeScenario.title || c.tags.some(t => this.activeScenario.title.includes(t) || t.includes(this.activeScenario.title)));
+                        if (cards.length === 0) {
+                            // Fallback if strict match fails: return all cards for the country
+                            cards = this.activeCountry.flashcards;
+                        }
+                    }
+                    return cards;
+                },
+
+                get currentCard() {
+                    return this.filteredFlashcards[this.currentCardIndex] || this.filteredFlashcards[0];
+                },
+
+                selectCountry(id) {
+                    this.selectedCountryId = id;
+                    this.currentCardIndex = 0;
+                    this.activeScenario = null;
+                    this.isFlipped = false;
+                    this.broadcastState();
+                    setTimeout(() => lucide.createIcons(), 50);
+                },
+
+                applyScenarioFilter(scenario) {
+                    this.activeScenario = scenario;
+                    this.currentCardIndex = 0;
+                    this.isFlipped = false;
+                    this.currentScreen = 'home'; // jump to flashcards with filter applied
+                    this.broadcastState();
+                    setTimeout(() => lucide.createIcons(), 50);
+                },
+
+                clearScenarioFilter() {
+                    this.activeScenario = null;
+                    this.currentCardIndex = 0;
+                    this.isFlipped = false;
+                    this.broadcastState();
+                },
+
+                nextCard() {
+                    if (this.currentCardIndex < this.filteredFlashcards.length - 1) {
+                        this.currentCardIndex++;
+                    } else {
+                        this.currentCardIndex = 0; // loop back
+                    }
+                    this.isFlipped = false;
+                },
+
+                prevCard() {
+                    if (this.currentCardIndex > 0) {
+                        this.currentCardIndex--;
+                    } else {
+                        this.currentCardIndex = this.filteredFlashcards.length - 1;
+                    }
+                    this.isFlipped = false;
+                },
+
+                toggleInterestTag(tag) {
+                    const idx = this.userProfile.interests.indexOf(tag);
+                    if (idx > -1) {
+                        this.userProfile.interests.splice(idx, 1);
+                    } else {
+                        this.userProfile.interests.push(tag);
+                    }
+                },
+
+                saveProfile() {
+                    localStorage.setItem('cultura_user_profile', JSON.stringify(this.userProfile));
+                    alert('User persona saved successfully to LocalStorage!');
+                    this.broadcastState();
+                },
+
+                submitQuestion() {
+                    if (!this.newQuestionText.trim()) return;
+                    
+                    const questionText = this.newQuestionText.trim();
+                    const countryName = this.activeCountry.name;
+
+                    // Auto-AI Fallback response generation
+                    let aiAnswer = `Great question regarding ${countryName}! Based on local cultural guidelines, always maintain respectful body language, observe local customs closely, and when in doubt, polite inquiry with a warm smile is universally appreciated.`;
+                    
+                    if (questionText.toLowerCase().includes('tip') || questionText.toLowerCase().includes('tipping')) {
+                        aiAnswer = `In ${countryName}, tipping is generally not customary and can sometimes be misunderstood. Standard service fees are included in bills where applicable.`;
+                    } else if (questionText.toLowerCase().includes('shoe') || questionText.toLowerCase().includes('shoes')) {
+                        aiAnswer = `In traditional settings and homes across ${countryName}, removing your shoes before stepping inside is an essential sign of respect.`;
+                    }
+
+                    const newPost = {
+                        id: 'q_' + Date.now(),
+                        countryName: countryName,
+                        question: questionText,
+                        author: 'Auto-AI Assistant',
+                        answer: aiAnswer,
+                        timestamp: 'Just now'
+                    };
+
+                    this.qaPosts.unshift(newPost);
+                    localStorage.setItem('cultura_qa_posts', JSON.stringify(this.qaPosts));
+                    this.newQuestionText = '';
+                    this.broadcastState();
+                },
+
+                togglePresentationMode() {
+                    this.presentationMode = !this.presentationMode;
+                    setTimeout(() => lucide.createIcons(), 50);
+                },
+
+                destroySession() {
+                    if (confirm('Are you sure you want to destroy the session and wipe all LocalStorage data?')) {
+                        localStorage.clear();
+                        window.location.reload();
+                    }
+                },
+
+                broadcastState() {
+                    culturalChannel.postMessage({
+                        type: 'SYNC_STATE',
+                        country: this.selectedCountryId,
+                        profile: this.userProfile
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
