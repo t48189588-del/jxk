@@ -3,6 +3,8 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}/cultural_leraning_app/app",
+  "updateRemoteUserUID": true,
   "customizations": {
     "vscode": {
       "extensions": [
@@ -15,7 +17,10 @@
       }
     }
   },
+  "containerEnv": {
+    "PATH": "/home/vscode/flutter/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  },
   "forwardPorts": [8080],
-  "postCreateCommand": "flutter doctor",
+  "postCreateCommand": "flutter config --enable-web && flutter pub get",
   "remoteUser": "vscode"
 }
