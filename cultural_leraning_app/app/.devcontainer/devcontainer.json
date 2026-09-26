@@ -1,0 +1,21 @@
+{
+  "name": "Flutter Web Development",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Dart-Code.flutter",
+        "Dart-Code.dart-code"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "dart.flutterSdkPath": "/home/vscode/flutter"
+      }
+    }
+  },
+  "forwardPorts": [8080],
+  "postCreateCommand": "flutter doctor",
+  "remoteUser": "vscode"
+}
