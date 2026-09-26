@@ -6,6 +6,7 @@ import 'scenarios_screen.dart';
 import 'qa_screen.dart';
 import 'profile_screen.dart';
 import 'desktop_presentation_screen.dart';
+import 'sign_capture_screen.dart'; // <-- 1. Import your new camera screen
 
 class MobileShell extends StatefulWidget {
   const MobileShell({super.key});
@@ -33,6 +34,19 @@ class _MobileShellState extends State<MobileShell> {
     const ProfileScreen(),
   ];
 
+  // Helper method to open the sign scanner with the current active country
+  void _openSignScanner(BuildContext context, AppState appState) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SignCaptureScreen(
+          targetCountry: appState
+              .currentCountry.name, // Passes current country dynamically!
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
@@ -45,7 +59,7 @@ class _MobileShellState extends State<MobileShell> {
       builder: (context, constraints) {
         bool isDesktop = constraints.maxWidth > 768;
 
-        // Common App Bar / Header content for desktop web
+        // Desktop App Bar
         PreferredSizeWidget? desktopAppBar = isDesktop
             ? AppBar(
                 elevation: 0,
@@ -57,13 +71,21 @@ class _MobileShellState extends State<MobileShell> {
                         style: const TextStyle(fontSize: 24)),
                     const SizedBox(width: 12),
                     Text(
-                      'Cultural Hub — ${appState.currentCountry.name}',
+                      'Travel link — ${appState.currentCountry.name}',
                       style: const TextStyle(
                           fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
                 actions: [
+                  // --- 2. Camera Scan Action Button for Desktop ---
+                  IconButton(
+                    icon:
+                        const Icon(Icons.camera_alt, color: Colors.deepOrange),
+                    tooltip: 'Scan Sign & Cultural Context',
+                    onPressed: () => _openSignScanner(context, appState),
+                  ),
+                  const SizedBox(width: 8),
                   IconButton(
                     icon: const Icon(Icons.desktop_windows,
                         color: Colors.deepOrange),
@@ -87,13 +109,20 @@ class _MobileShellState extends State<MobileShell> {
                         style: const TextStyle(fontSize: 22)),
                     const SizedBox(width: 8),
                     Text(
-                      'Cultural Hub (${appState.currentCountry.name})',
+                      'Travel link (${appState.currentCountry.name})',
                       style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
                 actions: [
+                  // --- 3. Camera Scan Action Button for Mobile ---
+                  IconButton(
+                    icon:
+                        const Icon(Icons.camera_alt, color: Colors.deepOrange),
+                    tooltip: 'Scan Sign',
+                    onPressed: () => _openSignScanner(context, appState),
+                  ),
                   IconButton(
                     icon: const Icon(Icons.desktop_windows,
                         color: Colors.deepOrange),
@@ -105,7 +134,6 @@ class _MobileShellState extends State<MobileShell> {
             : null;
 
         if (isDesktop) {
-          // Responsive Web Layout (Sidebar + Full Screen Content)
           return Scaffold(
             backgroundColor: Colors.grey[100],
             appBar: desktopAppBar,
@@ -118,7 +146,6 @@ class _MobileShellState extends State<MobileShell> {
                   labelType: NavigationRailLabelType.all,
                   selectedIconTheme:
                       const IconThemeData(color: Colors.deepOrange, size: 28),
-                  // Fixed property name from selectedTextStyle to selectedLabelTextStyle
                   selectedLabelTextStyle: const TextStyle(
                       color: Colors.deepOrange, fontWeight: FontWeight.bold),
                   unselectedIconTheme: const IconThemeData(color: Colors.grey),
@@ -160,7 +187,7 @@ class _MobileShellState extends State<MobileShell> {
           );
         }
 
-        // Mobile Layout (Bottom Nav)
+        // Mobile Layout
         return Scaffold(
           backgroundColor: Colors.white,
           appBar: mobileAppBar,

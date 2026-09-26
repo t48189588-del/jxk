@@ -2,8 +2,39 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/cultural_models.dart';
+import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
 
 class AppState extends ChangeNotifier {
+  // Detected browser language (e.g., 'en', 'es', 'ja', 'fr')
+  String _currentLanguage = 'en';
+  String get currentLanguage => _currentLanguage;
+
+  AppState() {
+    _detectBrowserLanguage();
+    _loadLocalData();
+  }
+
+  void _detectBrowserLanguage() {
+    // Extracts the primary language code from the browser environment (e.g., 'es-ES' -> 'es')
+    final Locale systemLocale = ui.PlatformDispatcher.instance.locale;
+    final langCode = systemLocale.languageCode.toLowerCase();
+
+    // Supported languages in your app, fallback to 'en'
+    const supportedLangs = ['en', 'es', 'ja', 'fr', 'de', 'zh'];
+    if (supportedLangs.contains(langCode)) {
+      _currentLanguage = langCode;
+    } else {
+      _currentLanguage = 'en';
+    }
+    notifyListeners();
+  }
+
+  void setLanguage(String langCode) {
+    _currentLanguage = langCode;
+    notifyListeners();
+  }
+
   String _selectedCountryId = 'japan';
   String? _selectedScenarioId;
   bool _isPresentationMode = false;
@@ -29,10 +60,6 @@ class AppState extends ChangeNotifier {
       cards = cards.where((c) => c.scenarioId == _selectedScenarioId).toList();
     }
     return cards;
-  }
-
-  AppState() {
-    _loadLocalData();
   }
 
   Future<void> _loadLocalData() async {
