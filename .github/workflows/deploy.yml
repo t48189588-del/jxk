@@ -28,9 +28,7 @@ jobs:
       - name: Build Flutter Web
         run: |
           cd cultural_leraning_app/app
-          # NOTE: If your repo is named 'my-repo', change --base-href to "/my-repo/"
-          # If it is a root user domain (username.github.io), remove the --base-href flag entirely.
-          flutter build web --release --base-href "/YOUR_REPO_NAME/"
+          flutter build web --release --base-href "/jxk/"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
