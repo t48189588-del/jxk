@@ -203,6 +203,98 @@ class AppLocalizations {
       'activeSessionStats': 'Statistik Sesi Aktif',
       'liveLogs': 'Log Soal Jawab Komuniti Langsung',
     },
+    'zh': {
+      // General & Camera
+      'scanSign': '扫描标牌',
+      'switchCamera': '切换摄像头',
+      'chooseGallery': '从相册选择图片',
+      'alignSign': '请将标牌置于框内',
+      'analyzingGemini': '正在通过Gemini分析文化背景...',
+      'detectedText': '检测到的文本',
+      'culturalContext': '文化背景与思维方式',
+
+      // QA Screen
+      'qaTitle': '社区问答与安全AI指南',
+      'qaSubtitle': '请输入关于文化礼仪的问题。',
+      'optionalNameHint': '您的姓名（可选）',
+      'askQuestionHint': '询问有关文化礼仪的问题...',
+      'recentDiscussions': '近期社区讨论',
+      'noQuestionsYet': '该国家暂无相关问题。',
+
+      // Profile Screen
+      'profileTitle': '个性化设置与个人资料',
+      'profileSubtitle': '设置保存在本地的学习者画像。',
+      'proficiencyLevel': '熟练度级别',
+      'primaryIntent': '主要出行或学习目的',
+      'personaSaved': '设置已保存至本地存储！',
+      'savePreferences': '保存偏好设置',
+
+      // Scenarios & Home Screen
+      'culturalScenarios': '文化场景',
+      'filteredByScenario': '正在按当前场景筛选',
+      'clearFilter': '清除筛选',
+      'noFlashcardsScenario': '未找到此场景的闪卡。',
+      'showAllCards': '显示所有卡片',
+      'tapCardFlip': '💡 点击卡片以查看翻译',
+
+      // Shell Navigation Labels
+      'navFlashcards': '闪卡',
+      'navScenarios': '场景',
+      'navCommunity': '社区',
+      'navProfile': '个人资料',
+
+      // Desktop Presentation
+      'desktopDashboard': '🖥️ 桌面演示仪表盘',
+      'destroySession': '销毁会话',
+      'activeSessionStats': '活动会话统计',
+      'liveLogs': '实时社区问答日志',
+    },
+    'ko': {
+      // General & Camera
+      'scanSign': '표지판 스캔',
+      'switchCamera': '카메라 전환',
+      'chooseGallery': '갤러리에서 이미지 선택',
+      'alignSign': '프레임 안에 표지판을 맞춰주세요',
+      'analyzingGemini': 'Gemini로 문화적 배경 분석 중...',
+      'detectedText': '감지된 텍스트',
+      'culturalContext': '문화적 배경 및 사고방식',
+
+      // QA Screen
+      'qaTitle': '커뮤니티 Q&A 및 안전한 AI 가이드',
+      'qaSubtitle': '문화적 에티켓에 대해 궁금한 점을 입력하세요.',
+      'optionalNameHint': '이름 (선택사항)',
+      'askQuestionHint': '문화적 에티켓에 대해 질문하기...',
+      'recentDiscussions': '최근 커뮤니티 토론',
+      'noQuestionsYet': '이 국가에 대한 질문이 아직 없습니다.',
+
+      // Profile Screen
+      'profileTitle': '개인화 및 프로필',
+      'profileSubtitle': '로컬에 저장되는 학습자 페르소나를 설정하세요.',
+      'proficiencyLevel': '숙련도 수준',
+      'primaryIntent': '주요 여행 및 학습 목적',
+      'personaSaved': '설정이 로컬 저장소에 저장되었습니다!',
+      'savePreferences': '환경설정 저장',
+
+      // Scenarios & Home Screen
+      'culturalScenarios': '문화 시나리오',
+      'filteredByScenario': '활성 시나리오로 필터링 중',
+      'clearFilter': '필터 지우기',
+      'noFlashcardsScenario': '이 시나리오에 해당하는 플래시카드가 없습니다.',
+      'showAllCards': '모든 카드 보기',
+      'tapCardFlip': '💡 탭하여 번역 보기',
+
+      // Shell Navigation Labels
+      'navFlashcards': '플래시카드',
+      'navScenarios': '시나리오',
+      'navCommunity': '커뮤니티',
+      'navProfile': '프로필',
+
+      // Desktop Presentation
+      'desktopDashboard': '🖥️ 데스크톱 프레젠테이션 대시보드',
+      'destroySession': '세션 종료',
+      'activeSessionStats': '활성 세션 통계',
+      'liveLogs': '실시간 커뮤니티 Q&A 로그',
+    },
   };
 
   /// Detects browser language dynamically.
@@ -230,6 +322,8 @@ class AppLocalizations {
 
   String translate(String key) {
     final langCode = locale.languageCode;
+    // debugPrint(
+    //     '🌐 [Localization] Translating key "$key" for language "$langCode"');
     return _localizedValues[langCode]?[key] ??
         _localizedValues['en']?[key] ??
         key;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../l10n/app_localizations.dart'; // --- LOCALIZATION --- Import localization class
+import '../widgets/instant_chat_fab.dart'; // --- INSTANT CHAT --- Import live chat floating button
 import 'home_screen.dart';
 import 'scenarios_screen.dart';
 import 'qa_screen.dart';
@@ -191,7 +192,13 @@ class _MobileShellState extends State<MobileShell> {
                 Expanded(
                   child: Container(
                     color: Colors.white,
-                    child: _screens[_currentIndex],
+                    // --- INSTANT CHAT --- Wrapped body in Stack to layer floating chat button globally
+                    child: Stack(
+                      children: [
+                        _screens[_currentIndex],
+                        const InstantChatFab(),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -203,7 +210,13 @@ class _MobileShellState extends State<MobileShell> {
         return Scaffold(
           backgroundColor: Colors.white,
           appBar: mobileAppBar,
-          body: _screens[_currentIndex],
+          // --- INSTANT CHAT --- Wrapped body in Stack to layer floating chat button globally
+          body: Stack(
+            children: [
+              _screens[_currentIndex],
+              const InstantChatFab(),
+            ],
+          ),
           bottomNavigationBar: Container(
             decoration: BoxDecoration(
               border: Border(

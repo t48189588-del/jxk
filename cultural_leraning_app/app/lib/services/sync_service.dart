@@ -1,86 +1,54 @@
-import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../models/cultural_models.dart';
+import '../l10n/app_localizations.dart';
 
-class AppState extends ChangeNotifier {
-  String _selectedCountryId = 'japan';
-  String? _selectedScenarioId;
-  bool _isPresentationMode = false;
-  Map<String, dynamic> _userProfile = {
-    'proficiency': 'Beginner',
-    'intent': 'Travel'
-  };
-  List<QAPost> _qaPosts = [];
+class SyncService {
+  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  String get selectedCountryId => _selectedCountryId;
-  String? get selectedScenarioId => _selectedScenarioId;
-  bool get isPresentationMode => _isPresentationMode;
-  Map<String, dynamic> get userProfile => _userProfile;
-  List<QAPost> get qaPosts => _qaPosts;
+  /// Reads the user's current browser language and localizes/updates
+  /// a target Q&A document in Firestore with language metadata.
+  static Future<void> localizeAndSyncQADocument({
+    required String documentId,
+    required String question,
+    required String answer,
+    required String countryId,
+    String? user,
+  }) async {
+    try {
+      // 1. Read the client's browser language using our localization engine
+      final String detectedLangCode = AppLocalizations.getBrowserLanguageCode();
 
-  CountryData get currentCountry =>
-      kCountriesDataset[_selectedCountryId] ?? kCountriesDataset['japan']!;
+      debugPrint(
+          '🌐 [SyncService] Detected client browser language: $detectedLangCode');
+      debugPrint(
+          '📤 [SyncService] Updating Firestore document $documentId with language context.');
 
-  List<Flashcard> get filteredFlashcards {
-    var cards = currentCountry.flashcards;
-    if (_selectedScenarioId != null) {
-      cards = cards.where((c) => c.scenarioId == _selectedScenarioId).toList();
+      // 2. Reference the specific document in your 'qa_posts' collection
+      final DocumentReference docRef =
+          _firestore.collection('qa_posts').doc(documentId);
+
+      // 3. Write/Update the fields including language-specific metadata or localized payloads
+      await docRef.set(
+          {
+            'question': question,
+            'answer': answer,
+            'countryId': countryId,
+            'user': user ?? 'Anonymous',
+            'timestamp': FieldValue.serverTimestamp(),
+            // Add localized sync tracking fields to optimize future database reads
+            'originalBrowserLanguage': detectedLangCode,
+            'isLocalizedSync': true,
+            'lastSyncedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(
+              merge:
+                  true)); // Merge ensures we don't overwrite untouched fields
+
+      debugPrint(
+          '✅ [SyncService] Successfully synchronized & localized document: $documentId');
+    } catch (e) {
+      debugPrint(
+          '❌ [SyncService] Error writing localized fields to Firestore: $e');
     }
-    return cards;
-  }
-
-  AppState() {
-    _loadLocalData();
-  }
-
-  Future<void> _loadLocalData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final postsJson = prefs.getString('qa_posts');
-    if (postsJson != null) {
-      final List decoded = jsonDecode(postsJson);
-      _qaPosts = decoded.map((e) => QAPost.fromJson(e)).toList();
-      notifyListeners();
-    }
-  }
-
-  Future<void> savePost(QAPost post) async {
-    _qaPosts.insert(0, post);
-    notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-        'qa_posts', jsonEncode(_qaPosts.map((e) => e.toJson()).toList()));
-  }
-
-  void setCountry(String countryId) {
-    _selectedCountryId = countryId;
-    _selectedScenarioId = null;
-    notifyListeners();
-  }
-
-  void setScenario(String? scenarioId) {
-    _selectedScenarioId = scenarioId;
-    notifyListeners();
-  }
-
-  void updateProfile(Map<String, dynamic> newProfile) {
-    _userProfile = newProfile;
-    notifyListeners();
-  }
-
-  void togglePresentationMode() {
-    _isPresentationMode = !_isPresentationMode;
-    notifyListeners();
-  }
-
-  // Auto-AI Fallback Generator for Community Q&A
-  String generateAIAnswer(String question, String countryId) {
-    final q = question.toLowerCase();
-    if (q.contains('tip') || q.contains('etiquette')) {
-      return 'AI Assistant: Always respect local customs, bow slightly when greeting in Japan, and observe modest dress codes in public areas.';
-    } else if (q.contains('food') || q.contains('eat')) {
-      return 'AI Assistant: Local dining features vibrant street food culture. Remember to use appropriate utensils and try regional specialties!';
-    }
-    return 'AI Assistant: Great question about $countryId! Local community guidelines recommend checking official travel handbooks or asking local guides for authentic insights.';
   }
 }

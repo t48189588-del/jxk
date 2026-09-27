@@ -21,14 +21,19 @@ const geminiApiKey = defineSecret("GEMINI_API_KEY");
 // ----------------------------------------------------------------------
 exports.askCulturalAssistant = onCall({ secrets: [geminiApiKey] }, async (request) => {
   try {
-    const { culturalContext, userQuery } = request.data || {};
+    const { culturalContext, userQuery, userDeviceLanguage } = request.data || {};
     
     if (!userQuery) {
       throw new HttpsError("invalid-argument", "Missing required field: userQuery");
     }
 
+    // Explicit language enforcement instruction for Gemini
+    const langInstruction = userDeviceLanguage 
+      ? `CRITICAL: You MUST write your entire response in the language corresponding to this language code: "${userDeviceLanguage}".` 
+      : '';
+
     const ai = new GoogleGenAI({ apiKey: geminiApiKey.value() });
-    const prompt = `You are an expert cultural guide. Context: ${culturalContext || 'General'}. Answer the following user question accurately, respectfully, and concisely: ${userQuery}`;
+    const prompt = `You are an expert cultural guide. Context: ${culturalContext || 'General'}. ${langInstruction} Answer the following user question accurately, respectfully, and concisely: ${userQuery}`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.1-flash-lite',

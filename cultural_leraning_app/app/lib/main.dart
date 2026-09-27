@@ -57,9 +57,12 @@ class CulturalLearningApp extends StatelessWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: const [
-          Locale('en', 'US'),
-          Locale('es', 'ES'),
-          Locale('ja', 'JP'),
+          Locale('en', ''), // English
+          Locale('ja', ''), // Japanese
+          Locale('es', ''), // Spanish
+          Locale('zh', ''), // Chinese (Simplified)
+          Locale('ko', ''), // Korean
+          Locale('ms', ''), // Malay
         ],
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),

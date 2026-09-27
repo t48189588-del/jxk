@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math'; // Added for safe random generation
 import '../providers/app_state.dart';
 import '../services/gemini_service.dart';
+// Inside your QAScreen submission handler:
+import '../services/sync_service.dart';
 
 import '../l10n/app_localizations.dart'; // --- LOCALIZATION --- Import localization class
 
@@ -51,13 +53,24 @@ class _QAScreenState extends State<QAScreen> {
         text,
       );
 
-      await FirebaseFirestore.instance.collection('qa_posts').add({
+      // After getting the AI answer and preparing to save to Firestore:
+      final docRef =
+          await FirebaseFirestore.instance.collection('qa_posts').add({
         'user': userName,
         'question': text,
         'answer': aiAnswer,
         'countryId': appState.selectedCountryId,
         'timestamp': FieldValue.serverTimestamp(),
       });
+
+// Sync and localize immediately using your SyncService
+      await SyncService.localizeAndSyncQADocument(
+        documentId: docRef.id,
+        question: text,
+        answer: aiAnswer,
+        countryId: appState.selectedCountryId,
+        user: userName,
+      );
 
       _questionController.clear();
       FocusScope.of(context).unfocus();
@@ -84,6 +97,42 @@ class _QAScreenState extends State<QAScreen> {
           _isSubmitting = false;
         });
       }
+    }
+  }
+
+  // Background helper to translate legacy documents on-the-fly
+  Future<void> _translateAndSaveDocument({
+    required String docId,
+    required String originalQuestion,
+    required String originalAnswer,
+    required String targetLang,
+  }) async {
+    try {
+      // Use Gemini Service to translate the question & answer into targetLang
+      final translatedQ = await GeminiService.askCulturalAssistant(
+        "Translate the following text accurately into language code '$targetLang'. Return ONLY the translated text without extra explanation.",
+        originalQuestion,
+      );
+
+      final translatedA = await GeminiService.askCulturalAssistant(
+        "Translate the following text accurately into language code '$targetLang'. Return ONLY the translated text without extra explanation.",
+        originalAnswer,
+      );
+
+      // Save the translation map back to Firestore
+      await FirebaseFirestore.instance.collection('qa_posts').doc(docId).set({
+        'translations': {
+          targetLang: {
+            'question': translatedQ,
+            'answer': translatedA,
+          }
+        }
+      }, SetOptions(merge: true));
+
+      // Refresh UI if screen is still active
+      if (mounted) setState(() {});
+    } catch (e) {
+      print('Background lazy translation error: $e');
     }
   }
 
@@ -208,14 +257,49 @@ class _QAScreenState extends State<QAScreen> {
                     ),
                   );
                 }
-
                 return ListView.builder(
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
-                    final data = docs[index].data() as Map<String, dynamic>;
+                    final doc = docs[index];
+                    final data = doc.data() as Map<String, dynamic>;
+                    final docId = doc.id;
                     final user = data['user'] ?? 'Anonymous';
-                    final question = data['question'] ?? '';
-                    final answer = data['answer'] ?? '';
+
+                    final String currentLang =
+                        AppLocalizations.getBrowserLanguageCode();
+                    final translations =
+                        data['translations'] as Map<String, dynamic>?;
+
+                    final bool hasTranslation = translations != null &&
+                        translations[currentLang] != null;
+
+                    final String question = hasTranslation
+                        ? (translations[currentLang]['question'] ??
+                            data['question'] ??
+                            '')
+                        : (data['question'] ?? '');
+
+                    final String answer = hasTranslation
+                        ? (translations[currentLang]['answer'] ??
+                            data['answer'] ??
+                            '')
+                        : (data['answer'] ?? '');
+
+                    // SAFE LAZY TRIGGER: Use WidgetsBinding to schedule the background translation
+                    // AFTER the current frame finishes rendering, preventing build-cycle crashes.
+                    if (!hasTranslation &&
+                        currentLang != 'en' &&
+                        data['question'] != null) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _translateAndSaveDocument(
+                          docId: docId,
+                          originalQuestion: data['question'],
+                          originalAnswer: data['answer'] ?? '',
+                          targetLang: currentLang,
+                        );
+                      });
+                    }
+
                     final timestamp = data['timestamp'] != null
                         ? (data['timestamp'] as Timestamp).toDate()
                         : DateTime.now();

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cloud_functions/cloud_functions.dart';
+import '../l10n/app_localizations.dart'; // --- LOCALIZATION --- Import localization class
 
 class SignAnalysisResult {
   final String originalText;
@@ -32,9 +33,15 @@ class GeminiService {
       final HttpsCallable callable =
           _functions.httpsCallable('askCulturalAssistant');
 
+      // Retrieve the client's browser language code dynamically
+      final String userDeviceLanguage =
+          AppLocalizations.getBrowserLanguageCode();
+
       final result = await callable.call(<String, dynamic>{
         'culturalContext': culturalContext,
         'userQuery': userQuery,
+        'userDeviceLanguage':
+            userDeviceLanguage, // <-- Pass language payload here
       });
 
       return result.data['result'] as String? ?? "No response generated.";
