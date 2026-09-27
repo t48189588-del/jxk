@@ -1,7 +1,7 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart'; // <-- For gallery import
+import 'package:image_picker/image_picker.dart';
 import '../providers/sign_analyzer_provider.dart';
 
 class SignCaptureScreen extends ConsumerStatefulWidget {
@@ -17,24 +17,77 @@ class SignCaptureScreen extends ConsumerStatefulWidget {
 class _SignCaptureScreenState extends ConsumerState<SignCaptureScreen> {
   CameraController? _controller;
   Future<void>? _initializeControllerFuture;
-  final ImageProvider = ImagePicker(); // Instance for gallery picking
+
+  List<CameraDescription> _cameras = [];
+  int _selectedCameraIndex = 0;
+
+  double _minZoom = 1.0;
+  double _maxZoom = 1.0;
+  double _currentZoom = 1.0;
 
   @override
   void initState() {
     super.initState();
-    _initCamera();
+    _initCameras();
   }
 
-  Future<void> _initCamera() async {
-    final cameras = await availableCameras();
-    if (cameras.isNotEmpty) {
-      _controller = CameraController(
-        cameras[0],
-        ResolutionPreset.high,
-        enableAudio: false,
-      );
-      _initializeControllerFuture = _controller!.initialize();
-      if (mounted) setState(() {});
+  Future<void> _initCameras() async {
+    try {
+      _cameras = await availableCameras();
+      if (_cameras.isNotEmpty) {
+        await _setupCamera(_cameras[_selectedCameraIndex]);
+      }
+    } catch (e) {
+      debugPrint('❌ [SignCapture] Camera initialization error: $e');
+    }
+  }
+
+  Future<void> _setupCamera(CameraDescription cameraDescription) async {
+    if (_controller != null) {
+      await _controller!.dispose();
+    }
+
+    // Use ResolutionPreset.max to match the native camera app's full uncropped sensor field of view
+    _controller = CameraController(
+      cameraDescription,
+      ResolutionPreset.max,
+      enableAudio: false,
+    );
+
+    _initializeControllerFuture = _controller!.initialize().then((_) async {
+      if (!mounted) return;
+      try {
+        _minZoom = await _controller!.getMinZoomLevel();
+        _maxZoom = await _controller!.getMaxZoomLevel();
+        _currentZoom = _minZoom;
+        await _controller!.setZoomLevel(_currentZoom);
+      } catch (e) {
+        debugPrint(
+            '⚠️ [SignCapture] Zoom not supported on this device/browser: $e');
+      }
+      setState(() {});
+    });
+
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _switchCamera() async {
+    if (_cameras.length < 2) return;
+    setState(() {
+      _selectedCameraIndex = (_selectedCameraIndex + 1) % _cameras.length;
+    });
+    await _setupCamera(_cameras[_selectedCameraIndex]);
+  }
+
+  Future<void> _updateZoom(double zoom) async {
+    if (_controller == null || !_controller!.value.isInitialized) return;
+    setState(() {
+      _currentZoom = zoom;
+    });
+    try {
+      await _controller!.setZoomLevel(_currentZoom);
+    } catch (e) {
+      debugPrint('❌ [SignCapture] Error setting zoom: $e');
     }
   }
 
@@ -55,7 +108,6 @@ class _SignCaptureScreenState extends ConsumerState<SignCaptureScreen> {
       if (pickedFile != null) {
         final bytes = await pickedFile.readAsBytes();
 
-        // Terminal Console Log requested
         debugPrint(
             '🎯 [SignCapture] Image successfully selected from Gallery: ${pickedFile.path}');
         debugPrint(
@@ -87,7 +139,12 @@ class _SignCaptureScreenState extends ConsumerState<SignCaptureScreen> {
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         actions: [
-          // Gallery Selection Action Button
+          if (_cameras.length > 1)
+            IconButton(
+              icon: const Icon(Icons.switch_camera),
+              tooltip: 'Switch Camera',
+              onPressed: analysisState.isLoading ? null : _switchCamera,
+            ),
           IconButton(
             icon: const Icon(Icons.photo_library),
             tooltip: 'Choose image from gallery',
@@ -98,20 +155,20 @@ class _SignCaptureScreenState extends ConsumerState<SignCaptureScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // 1. Camera Preview
+          // 1. Camera Preview (Optimized aspect ratio to avoid artificial zoom/cropping)
           FutureBuilder<void>(
             future: _initializeControllerFuture,
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.done) {
-                return SizedBox.expand(
-                  child: FittedBox(
-                    fit: BoxFit.cover,
-                    child: SizedBox(
-                      width: _controller!.value.previewSize?.height ?? 100,
-                      height: _controller!.value.previewSize?.width ?? 100,
-                      child: CameraPreview(_controller!),
-                    ),
-                  ),
+              if (snapshot.connectionState == ConnectionState.done &&
+                  _controller != null &&
+                  _controller!.value.isInitialized) {
+                final size = MediaQuery.of(context).size;
+                var camera = _controller!.value;
+
+                // Calculate correct scale to fit screen proportionally without aggressive cropping
+                // If aspect ratio needs matching:
+                return Center(
+                  child: CameraPreview(_controller!),
                 );
               } else {
                 return const Center(
@@ -128,7 +185,7 @@ class _SignCaptureScreenState extends ConsumerState<SignCaptureScreen> {
               height: 200,
               decoration: BoxDecoration(
                 border: Border.all(
-                    color: Colors.deepOrange.withOpacity(0.8), width: 2),
+                    color: Colors.deepOrange.withValues(alpha: 0.8), width: 2),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Align(
@@ -150,7 +207,49 @@ class _SignCaptureScreenState extends ConsumerState<SignCaptureScreen> {
             ),
           ),
 
-          // 3. Loading State Indicator Overlay
+          // 3. Zoom Slider Control (Right side vertical bar)
+          if (_maxZoom > _minZoom)
+            Positioned(
+              right: 16,
+              top: 40,
+              bottom: 140,
+              child: Container(
+                width: 48,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.zoom_in, color: Colors.white70, size: 20),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: RotatedBox(
+                        quarterTurns: 3,
+                        child: Slider(
+                          value: _currentZoom,
+                          min: _minZoom,
+                          max: _maxZoom,
+                          activeColor: Colors.deepOrange,
+                          inactiveColor: Colors.white30,
+                          onChanged: _updateZoom,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${_currentZoom.toStringAsFixed(1)}x',
+                      style: const TextStyle(color: Colors.white, fontSize: 10),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+          // 4. Loading State Indicator Overlay
           if (analysisState.isLoading)
             Container(
               color: Colors.black54,
@@ -172,7 +271,7 @@ class _SignCaptureScreenState extends ConsumerState<SignCaptureScreen> {
               ),
             ),
 
-          // 4. Capture Button Overlay
+          // 5. Capture Button Overlay
           Positioned(
             bottom: 40,
             left: 0,
@@ -189,7 +288,6 @@ class _SignCaptureScreenState extends ConsumerState<SignCaptureScreen> {
                           final image = await _controller!.takePicture();
                           final bytes = await image.readAsBytes();
 
-                          // Terminal Console Logs requested
                           debugPrint(
                               '📸 [SignCapture] Photo successfully captured from camera: ${image.path}');
                           debugPrint(
@@ -217,7 +315,7 @@ class _SignCaptureScreenState extends ConsumerState<SignCaptureScreen> {
             ),
           ),
 
-          // 5. Result Bottom Sheet handler
+          // 6. Result Bottom Sheet handler
           if (analysisState.hasValue && analysisState.value != null)
             DraggableScrollableSheet(
               initialChildSize: 0.45,
