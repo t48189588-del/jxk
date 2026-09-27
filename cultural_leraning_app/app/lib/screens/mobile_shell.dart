@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
+import '../l10n/app_localizations.dart'; // --- LOCALIZATION --- Import localization class
 import 'home_screen.dart';
 import 'scenarios_screen.dart';
 import 'qa_screen.dart';
 import 'profile_screen.dart';
 import 'desktop_presentation_screen.dart';
-import 'sign_capture_screen.dart'; // <-- 1. Import your new camera screen
+import 'sign_capture_screen.dart';
 
 class MobileShell extends StatefulWidget {
   const MobileShell({super.key});
@@ -50,6 +51,8 @@ class _MobileShellState extends State<MobileShell> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
+    final l10n = AppLocalizations.of(
+        context); // --- LOCALIZATION --- Initialize localizer
 
     if (appState.isPresentationMode) {
       return const DesktopPresentationScreen();
@@ -82,14 +85,16 @@ class _MobileShellState extends State<MobileShell> {
                   IconButton(
                     icon:
                         const Icon(Icons.camera_alt, color: Colors.deepOrange),
-                    tooltip: 'Scan Sign & Cultural Context',
+                    tooltip: l10n?.translate('scanSign') ??
+                        'Scan Sign & Cultural Context', // --- LOCALIZATION ---
                     onPressed: () => _openSignScanner(context, appState),
                   ),
                   const SizedBox(width: 8),
                   IconButton(
                     icon: const Icon(Icons.desktop_windows,
                         color: Colors.deepOrange),
-                    tooltip: 'Launch Presentation Mode',
+                    tooltip: l10n?.translate('launchPresentation') ??
+                        'Launch Presentation Mode', // --- LOCALIZATION ---
                     onPressed: () => appState.togglePresentationMode(),
                   ),
                   const SizedBox(width: 16),
@@ -120,13 +125,15 @@ class _MobileShellState extends State<MobileShell> {
                   IconButton(
                     icon:
                         const Icon(Icons.camera_alt, color: Colors.deepOrange),
-                    tooltip: 'Scan Sign',
+                    tooltip: l10n?.translate('scanSign') ??
+                        'Scan Sign', // --- LOCALIZATION ---
                     onPressed: () => _openSignScanner(context, appState),
                   ),
                   IconButton(
                     icon: const Icon(Icons.desktop_windows,
                         color: Colors.deepOrange),
-                    tooltip: 'Launch Presentation Mode',
+                    tooltip: l10n?.translate('launchPresentation') ??
+                        'Launch Presentation Mode', // --- LOCALIZATION ---
                     onPressed: () => appState.togglePresentationMode(),
                   ),
                 ],
@@ -151,26 +158,31 @@ class _MobileShellState extends State<MobileShell> {
                   unselectedIconTheme: const IconThemeData(color: Colors.grey),
                   backgroundColor: Colors.white,
                   elevation: 2,
-                  destinations: const [
+                  destinations: [
+                    // --- LOCALIZATION --- Removed const to support dynamic translation strings
                     NavigationRailDestination(
-                      icon: Icon(Icons.home_outlined),
-                      selectedIcon: Icon(Icons.home),
-                      label: Text('Flashcards'),
+                      icon: const Icon(Icons.home_outlined),
+                      selectedIcon: const Icon(Icons.home),
+                      label: Text(l10n?.translate('navFlashcards') ??
+                          'Flashcards'), // --- LOCALIZATION ---
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.grid_view_rounded),
-                      selectedIcon: Icon(Icons.grid_view),
-                      label: Text('Scenarios'),
+                      icon: const Icon(Icons.grid_view_rounded),
+                      selectedIcon: const Icon(Icons.grid_view),
+                      label: Text(l10n?.translate('navScenarios') ??
+                          'Scenarios'), // --- LOCALIZATION ---
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.forum_outlined),
-                      selectedIcon: Icon(Icons.forum),
-                      label: Text('Community'),
+                      icon: const Icon(Icons.forum_outlined),
+                      selectedIcon: const Icon(Icons.forum),
+                      label: Text(l10n?.translate('navCommunity') ??
+                          'Community'), // --- LOCALIZATION ---
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.person_outline),
-                      selectedIcon: Icon(Icons.person),
-                      label: Text('Profile'),
+                      icon: const Icon(Icons.person_outline),
+                      selectedIcon: const Icon(Icons.person),
+                      label: Text(l10n?.translate('navProfile') ??
+                          'Profile'), // --- LOCALIZATION ---
                     ),
                   ],
                 ),
@@ -205,23 +217,28 @@ class _MobileShellState extends State<MobileShell> {
               elevation: 0,
               type: BottomNavigationBarType.fixed,
               onTap: (index) => setState(() => _currentIndex = index),
-              items: const [
+              items: [
+                // --- LOCALIZATION --- Removed const to allow runtime translated labels
                 BottomNavigationBarItem(
-                    icon: Icon(Icons.home_outlined),
-                    activeIcon: Icon(Icons.home),
-                    label: 'Flashcards'),
+                    icon: const Icon(Icons.home_outlined),
+                    activeIcon: const Icon(Icons.home),
+                    label: l10n?.translate('navFlashcards') ??
+                        'Flashcards'), // --- LOCALIZATION ---
                 BottomNavigationBarItem(
-                    icon: Icon(Icons.grid_view_rounded),
-                    activeIcon: Icon(Icons.grid_view),
-                    label: 'Scenarios'),
+                    icon: const Icon(Icons.grid_view_rounded),
+                    activeIcon: const Icon(Icons.grid_view),
+                    label: l10n?.translate('navScenarios') ??
+                        'Scenarios'), // --- LOCALIZATION ---
                 BottomNavigationBarItem(
-                    icon: Icon(Icons.forum_outlined),
-                    activeIcon: Icon(Icons.forum),
-                    label: 'Community'),
+                    icon: const Icon(Icons.forum_outlined),
+                    activeIcon: const Icon(Icons.forum),
+                    label: l10n?.translate('navCommunity') ??
+                        'Community'), // --- LOCALIZATION ---
                 BottomNavigationBarItem(
-                    icon: Icon(Icons.person_outline),
-                    activeIcon: Icon(Icons.person),
-                    label: 'Profile'),
+                    icon: const Icon(Icons.person_outline),
+                    activeIcon: const Icon(Icons.person),
+                    label: l10n?.translate('navProfile') ??
+                        'Profile'), // --- LOCALIZATION ---
               ],
             ),
           ),

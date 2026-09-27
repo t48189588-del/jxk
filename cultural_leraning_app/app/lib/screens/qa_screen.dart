@@ -5,6 +5,8 @@ import 'dart:math'; // Added for safe random generation
 import '../providers/app_state.dart';
 import '../services/gemini_service.dart';
 
+import '../l10n/app_localizations.dart'; // --- LOCALIZATION --- Import localization class
+
 class QAScreen extends StatefulWidget {
   const QAScreen({super.key});
 
@@ -88,23 +90,30 @@ class _QAScreenState extends State<QAScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
+    final l10n = AppLocalizations.of(
+        context); // --- LOCALIZATION --- Initialize localizer
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Community Q&A & Secure AI Guide',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          Text(
+            l10n?.translate('qaTitle') ?? 'Community Q&A & Secure AI Guide',
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 4),
-          const Text(
-              'Ask cultural etiquette questions. Answers are generated securely via Firebase.',
-              style: TextStyle(color: Colors.grey, fontSize: 13)),
+          Text(
+            l10n?.translate('qaSubtitle') ??
+                'Ask cultural etiquette questions. Answers are generated securely via Firebase.',
+            style: const TextStyle(color: Colors.grey, fontSize: 13),
+          ),
           const SizedBox(height: 12),
           TextField(
             controller: _nameController,
             decoration: InputDecoration(
-              hintText: 'Your Optional Name (e.g., Alex)',
+              hintText: l10n?.translate('optionalNameHint') ??
+                  'Your Optional Name (e.g., Alex)',
               hintStyle: const TextStyle(fontSize: 13),
               border:
                   OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -119,7 +128,8 @@ class _QAScreenState extends State<QAScreen> {
                 child: TextField(
                   controller: _questionController,
                   decoration: InputDecoration(
-                    hintText: 'Ask a cultural etiquette question...',
+                    hintText: l10n?.translate('qaSubtitle') ??
+                        'Ask a cultural etiquette question...',
                     hintStyle: const TextStyle(fontSize: 13),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12)),
@@ -155,8 +165,11 @@ class _QAScreenState extends State<QAScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          const Text('Recent Community Discussions',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          Text(
+            l10n?.translate('recentDiscussions') ??
+                'Recent Community Discussions',
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 8),
 
           // Real-time Firestore Stream Builder

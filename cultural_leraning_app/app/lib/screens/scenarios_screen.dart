@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import 'mobile_shell.dart';
+import '../l10n/app_localizations.dart'; // --- LOCALIZATION --- Import localization class
 
 class ScenariosScreen extends StatelessWidget {
   const ScenariosScreen({super.key});
@@ -10,17 +11,22 @@ class ScenariosScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
     final country = appState.currentCountry;
+    final l10n = AppLocalizations.of(
+        context); // --- LOCALIZATION --- Initialize localizer
 
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Cultural Scenarios',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          Text(
+            l10n?.translate('culturalScenarios') ?? 'Cultural Scenarios',
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 6),
           Text(
-              'Select a scenario for ${country.name} to filter flashcards instantly.',
+              l10n?.translate('filteredByScenario') ??
+                  'Select a scenario for ${country.name} to filter flashcards instantly.',
               style: const TextStyle(color: Colors.grey, fontSize: 15)),
           const SizedBox(height: 20),
           Expanded(

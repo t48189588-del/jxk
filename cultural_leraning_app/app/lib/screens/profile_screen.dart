@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
+import '../l10n/app_localizations.dart'; // --- LOCALIZATION --- Import localization class
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -44,20 +45,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final appState = Provider.of<AppState>(context);
+    final l10n = AppLocalizations.of(
+        context); // --- LOCALIZATION --- Initialize localizer
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Personalization & Profile',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          Text(
+            l10n?.translate('profileTitle') ??
+                'Personalization & Profile', // --- LOCALIZATION ---
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 4),
-          const Text('Configure your learner persona stored locally.',
-              style: TextStyle(color: Colors.grey, fontSize: 14)),
+          Text(
+            l10n?.translate('profileSubtitle') ??
+                'Configure your learner persona stored locally.', // --- LOCALIZATION ---
+            style: const TextStyle(color: Colors.grey, fontSize: 14),
+          ),
           const SizedBox(height: 24),
-          const Text('Proficiency Level',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          Text(
+            l10n?.translate('proficiencyLevel') ??
+                'Proficiency Level', // --- LOCALIZATION ---
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             value: _proficiency,
@@ -75,8 +87,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
           ),
           const SizedBox(height: 20),
-          const Text('Primary Travel / Learning Intent',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          Text(
+            l10n?.translate('primaryIntent') ??
+                'Primary Travel / Learning Intent', // --- LOCALIZATION ---
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             value: _intent,
@@ -115,8 +130,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Text('Persona preferences saved to LocalStorage!')),
                 );
               },
-              child: const Text('Save Preferences',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              child: Text(
+                  l10n?.translate('savePreferences') ?? 'Save Preferences',
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
           const SizedBox(height: 16),
