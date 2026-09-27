@@ -128,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     fit: StackFit.expand,
                                     children: [
                                       Image.network(card.imageUrl,
-                                          fit: BoxFit.cover),
+                                          fit: BoxFit.contain),
                                       Positioned(
                                         top: 12,
                                         right: 12,
